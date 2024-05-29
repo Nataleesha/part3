@@ -1,11 +1,14 @@
 const express = require("express");
 const morgan = require("morgan");
+const cors = require("cors");
 
 const app = express();
 const PORT = 3001;
 
 let contacts = require("./data.json");
 
+app.use(express.static("dist"));
+app.use(cors());
 app.use(express.json());
 
 morgan.token("body", (req, res) => {
