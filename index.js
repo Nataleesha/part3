@@ -1,9 +1,12 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 
+const Person = require("./models/person");
+
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT;
 
 let contacts = require("./data.json");
 
@@ -25,7 +28,9 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/persons", (req, res) => {
-  res.send(contacts);
+  Person.find({}).then((persons) => {
+    res.json(persons);
+  });
 });
 
 app.get("/info", (req, res) => {
@@ -35,15 +40,10 @@ app.get("/info", (req, res) => {
   );
 });
 
-app.get("/api/persons/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const person = contacts.find((contact) => contact.id === id);
-  if (person) {
-    res.send(person);
-  } else {
-    res.statusMessage = "No person found";
-    res.status(404).send("<p>404 - No person found</p>");
-  }
+app.get("api/persons/:id", (req, res) => {
+  Person.findById(req.params.id).then((person) => {
+    res.json(person);
+  });
 });
 
 app.delete("/api/persons/:id", (req, res) => {
@@ -54,21 +54,20 @@ app.delete("/api/persons/:id", (req, res) => {
 });
 
 app.post("/api/persons", (req, res) => {
-  const person = req.body;
+  const body = req.body;
 
-  if (!person.name || !person.number) {
-    res.status(400).send({ error: "missing data" });
-  } else if (
-    contacts.find(
-      (contact) => contact.name.toLowerCase() === person.name.toLowerCase()
-    )
-  ) {
-    res.status(400).send({ error: "name already is in phonebook" });
-  } else {
-    const newPerson = { id: Math.floor(Math.random() * 999999), ...person };
-    contacts = contacts.concat(newPerson);
-    res.json(newPerson);
+  if (!body.name || !body.number) {
+    return res.status(400).json({ error: "missing data" });
   }
+
+  const person = new Person({
+    name: body.name,
+    number: body.number,
+  });
+
+  person.save().then((savedPerson) => {
+    res.json(savedPerson);
+  });
 });
 
 app.listen(PORT, () => {
